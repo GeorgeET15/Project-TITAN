@@ -42,8 +42,7 @@ enum MenuItem {
     // Robot Local
     Bringup,
     LocalTeleop,
-    Mapping,
-    Cartographer,
+    SlamToolbox,
     Navigation,
     Waypoints,
     SaveMap,
@@ -62,8 +61,7 @@ impl MenuItem {
         match self {
             MenuItem::Bringup => "[Robot] START BRINGUP".to_string(),
             MenuItem::LocalTeleop => "[Robot] LOCAL TELEOP (TMUX)".to_string(),
-            MenuItem::Mapping => "[Robot] START MAPPING (SLAM TOOLBOX)".to_string(),
-            MenuItem::Cartographer => "[Robot] START MAPPING (CARTOGRAPHER)".to_string(),
+            MenuItem::SlamToolbox => "[Robot] START MAPPING (SLAM TOOLBOX)".to_string(),
             MenuItem::Navigation => "[Robot] START NAV2".to_string(),
             MenuItem::Waypoints => "[Robot] WAYPOINTS / NAV ".to_string(),
             MenuItem::SaveMap => "[Robot] SAVE MAP".to_string(),
@@ -174,8 +172,7 @@ impl App {
             all_menu_items: vec![
                 MenuItem::Bringup,
                 MenuItem::LocalTeleop,
-                MenuItem::Mapping,
-                MenuItem::Cartographer,
+                MenuItem::SlamToolbox,
                 MenuItem::Navigation,
                 MenuItem::Waypoints,
                 MenuItem::SaveMap,
@@ -264,7 +261,7 @@ impl App {
             match (self.device_type, item) {
                 (DeviceType::Titan, MenuItem::RemoteTeleop) | (DeviceType::Titan, MenuItem::RemoteRViz) => false,
                 (DeviceType::Laptop, MenuItem::Bringup) | (DeviceType::Laptop, MenuItem::LocalTeleop) | 
-                (DeviceType::Laptop, MenuItem::Mapping) | (DeviceType::Laptop, MenuItem::Cartographer) | (DeviceType::Laptop, MenuItem::Navigation) |
+                (DeviceType::Laptop, MenuItem::SlamToolbox) | (DeviceType::Laptop, MenuItem::Navigation) |
                 (DeviceType::Laptop, MenuItem::Waypoints) |
                 (DeviceType::Laptop, MenuItem::SaveMap) | (DeviceType::Laptop, MenuItem::CheckUSB) |
                 (DeviceType::Laptop, MenuItem::Battery) | (DeviceType::Laptop, MenuItem::Rebuild) |
@@ -480,7 +477,6 @@ impl App {
     fn translate_log(&self, msg: &str) -> String {
         if msg.contains("bringup.launch.py") { "Initializing Hardware Drivers...".to_string() }
         else if msg.contains("mapping.launch.py") { "Starting SLAM Toolbox Session...".to_string() }
-        else if msg.contains("cartographer.launch.py") { "Starting Google Cartographer SLAM...".to_string() }
         else if msg.contains("navigation.launch.py") { "Activating Nav2 Stack...".to_string() }
         else if msg.contains("teleop_twist_keyboard") { "Opening Teleop Terminal...".to_string() }
         else if msg.contains("map_saver_cli") { "Compressing & Saving Map Data...".to_string() }
@@ -556,13 +552,9 @@ impl App {
                         self.operation_status = "BRINGUP".to_string();
                         self.spawn_ros_launch("bringup.launch.py");
                     },
-                    MenuItem::Mapping => {
+                    MenuItem::SlamToolbox => {
                         self.operation_status = "MAPPING".to_string();
                         self.spawn_ros_launch("mapping.launch.py");
-                    },
-                    MenuItem::Cartographer => {
-                        self.operation_status = "ADV_MAPPING".to_string();
-                        self.spawn_ros_launch("cartographer.launch.py");
                     },
                     MenuItem::Navigation => {
                         if self.available_maps.is_empty() {

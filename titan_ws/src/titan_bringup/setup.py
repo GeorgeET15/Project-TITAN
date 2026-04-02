@@ -15,7 +15,7 @@ setup(
         
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'maps'), [f for f in glob('maps/*', recursive=True) if os.path.isfile(f)]),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml') + glob('config/*.lua')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
