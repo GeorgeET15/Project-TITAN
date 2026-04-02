@@ -225,7 +225,7 @@ impl App {
 
     fn load_waypoints(&mut self) {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-        let path = format!("{}/titan_ws/src/titan_bringup/config/waypoints.yaml", home);
+        let path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/config/waypoints.yaml", home);
         if let Ok(content) = fs::read_to_string(&path) {
             match serde_yaml::from_str::<WaypointFile>(&content) {
                 Ok(data) => {
@@ -243,7 +243,7 @@ impl App {
 
     fn save_waypoints(&mut self) {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-        let path = format!("{}/titan_ws/src/titan_bringup/config/waypoints.yaml", home);
+        let path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/config/waypoints.yaml", home);
         let data = WaypointFile { waypoints: self.waypoints.clone() };
         match serde_yaml::to_string(&data) {
             Ok(content) => {
@@ -275,13 +275,18 @@ impl App {
     }
 
     fn run_diagnostics(&mut self) {
-        self.startup_checks.push("Checking Power System...".to_string());
-        self.startup_checks.push(format!("  -> {}", self.get_battery_readable()));
-        
-        self.startup_checks.push("Scanning Serial Bus...".to_string());
-        let usb = self.get_usb_readable();
-        for line in usb {
-            self.startup_checks.push(format!("  -> {}", line));
+        if self.device_type == DeviceType::Titan {
+            self.startup_checks.push("Checking Power System...".to_string());
+            self.startup_checks.push(format!("  -> {}", self.get_battery_readable()));
+            
+            self.startup_checks.push("Scanning Serial Bus...".to_string());
+            let usb = self.get_usb_readable();
+            for line in usb {
+                self.startup_checks.push(format!("  -> {}", line));
+            }
+        } else {
+            self.startup_checks.push("Laptop Mode Detected".to_string());
+            self.startup_checks.push("  -> Skipping hardware bus scanning".to_string());
         }
         
         self.startup_checks.push("ROS 2 Context... OK".to_string());
@@ -326,7 +331,7 @@ impl App {
     fn update_maps_list(&mut self) {
         self.available_maps.clear();
         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-        let maps_path = format!("{}/titan_ws/src/titan_bringup/maps/", home);
+        let maps_path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/maps/", home);
         if let Ok(entries) = std::fs::read_dir(maps_path) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -344,7 +349,7 @@ impl App {
     fn update_rviz_configs_list(&mut self) {
         self.available_rviz_configs.clear();
         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-        let config_path = format!("{}/titan_ws/src/titan_bringup/rviz_config/", home);
+        let config_path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/rviz_config/", home);
         if let Ok(entries) = std::fs::read_dir(config_path) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -566,7 +571,7 @@ impl App {
                         }
                         self.operation_status = "NAVIGATION".to_string();
                         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-                        let maps_path = format!("{}/titan_ws/src/titan_bringup/maps/", home);
+                        let maps_path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/maps/", home);
                         let map_file = format!("{}{}", maps_path, self.available_maps[self.map_selection_index]);
                         let map_arg = format!("map:={}", map_file);
                         self.spawn_ros_launch_with_args("navigation.launch.py", vec![&map_arg]);
@@ -579,7 +584,7 @@ impl App {
                         
                         if is_tmux {
                             self.logs.push(format!("Spawning Teleop (s={}, t={}) in split...", speed, turn));
-                            let tmux_cmd = format!("ros2 run teleop_twist_keyboard teleop_twist_keyboard {}", ros_args);
+                            let tmux_cmd = format!("bash -c 'source ~/Project-TITAN/titan_ws/install/setup.bash && ros2 run titan_bringup titan_teleop {}'", ros_args);
                             let _ = Command::new("tmux")
                                 .args(["split-window", "-h", &tmux_cmd])
                                 .stdout(Stdio::null())
@@ -595,7 +600,7 @@ impl App {
                         let ros_args = format!("--ros-args -p speed:={} -p turn:={}", speed, turn);
 
                         self.logs.push(format!("Spawning Remote Teleop (s={}, t={}) in new window...", speed, turn));
-                        let cmd_str = format!("gnome-terminal -- bash -c 'ros2 run teleop_twist_keyboard teleop_twist_keyboard {}; exec bash'", ros_args);
+                        let cmd_str = format!("gnome-terminal -- bash -c 'source ~/Project-TITAN/titan_ws/install/setup.bash && ros2 run titan_bringup titan_teleop {}'", ros_args);
                         let _ = Command::new("bash")
                             .arg("-c")
                             .arg(cmd_str)
@@ -611,7 +616,7 @@ impl App {
                             self.available_rviz_configs[self.rviz_config_selection_index].clone()
                         };
                         self.logs.push(format!("Spawning Remote RViz with config: {}...", config_file));
-                        let cmd_str = format!("gnome-terminal -- bash -c 'LIBGL_ALWAYS_SOFTWARE=1 rviz2 -d ~/titan_ws/src/titan_bringup/rviz_config/{}; exec bash'", config_file);
+                        let cmd_str = format!("gnome-terminal -- bash -c 'LIBGL_ALWAYS_SOFTWARE=1 rviz2 -d ~/Project-TITAN/titan_ws/src/titan_bringup/rviz_config/{}; exec bash'", config_file);
                         let _ = Command::new("bash")
                             .arg("-c")
                             .arg(cmd_str)
@@ -636,7 +641,7 @@ impl App {
                         self.loading_message = "Rebuilding Workspace...".to_string();
                         self.logs.push("Rebuilding...".to_string());
                         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-                        let build_cmd = format!("cd {}/titan_ws && colcon build --symlink-install", home);
+                        let build_cmd = format!("cd {}/Project-TITAN/titan_ws && colcon build --symlink-install", home);
                         let output = Command::new("bash").arg("-c").arg(build_cmd).output();
                         self.handle_output(output, "Rebuild complete.");
                         self.is_loading = false;
@@ -661,7 +666,7 @@ impl App {
 
     fn spawn_ros_launch_with_args(&mut self, file: &str, args: Vec<&str>) {
         let args_str = args.join(" ");
-        let cmd_str = format!("source ~/titan_ws/install/setup.bash && ros2 launch titan_bringup {} {}", file, args_str);
+        let cmd_str = format!("source ~/Project-TITAN/titan_ws/install/setup.bash && ros2 launch titan_bringup {} {}", file, args_str);
 
         if self.device_type == DeviceType::Laptop {
             self.logs.push(format!("Laptop Mode: {} launching in new window...", file));
@@ -1089,7 +1094,7 @@ async fn run_app<B: ratatui::backend::Backend>(
                         KeyCode::Enter => {
                             if !app.map_name_input.is_empty() {
                                 let name = app.map_name_input.clone();
-                                let path = format!("/home/pidev/titan_ws/src/titan_bringup/maps/{}", name);
+                                let path = format!("/home/pidev/Project-TITAN/titan_ws/src/titan_bringup/maps/{}", name);
                                 let output = Command::new("ros2")
                                     .args(["run", "nav2_map_server", "map_saver_cli", "-f", &path])
                                     .output();

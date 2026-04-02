@@ -15,7 +15,7 @@ setup(
         
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'maps'), [f for f in glob('maps/*', recursive=True) if os.path.isfile(f)]),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml') + glob('config/*.lua')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             'arduino_bridge = titan_bringup.arduino_bridge_node:main',
             'system_manager = titan_bringup.system_manager:main',
+            'titan_teleop = titan_bringup.titan_teleop:main',
         ],
     },
 )
