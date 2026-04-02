@@ -20,6 +20,7 @@ class ArduinoBridge(Node):
         self.declare_parameter('wheel_base', 0.45)      # Measured 45cm width
         self.declare_parameter('publish_tf', True)
         self.declare_parameter('use_gyro', False)
+        self.declare_parameter('publish_imu', False)
         
         self.port = self.get_parameter('port').value
         self.baudrate = self.get_parameter('baudrate').value
@@ -170,7 +171,7 @@ class ArduinoBridge(Node):
                 if self.publish_tf:
                     self.tf_broadcaster.sendTransform(t)
 
-                # IMU Data (Convert g's to m/s^2)
+                # IMU Data (Convert g's to m/s^2, degrees/sec to rad/s)
                 G_TO_MS2 = 9.80665
                 imu = Imu()
                 imu.header.stamp = now
@@ -178,10 +179,11 @@ class ArduinoBridge(Node):
                 imu.linear_acceleration.x = (ax / 100.0) * G_TO_MS2
                 imu.linear_acceleration.y = (ay / 100.0) * G_TO_MS2
                 imu.linear_acceleration.z = (az / 100.0) * G_TO_MS2
-                imu.angular_velocity.x = gx / 1000.0
-                imu.angular_velocity.y = gy / 1000.0
-                imu.angular_velocity.z = gz / 1000.0
-                self.imu_pub.publish(imu)
+                imu.angular_velocity.x = (gx / 1000.0) * (math.pi / 180.0)
+                imu.angular_velocity.y = (gy / 1000.0) * (math.pi / 180.0)
+                imu.angular_velocity.z = (gz / 1000.0) * (math.pi / 180.0)
+                if self.get_parameter('publish_imu').value:
+                    self.imu_pub.publish(imu)
 
                 # Odom
                 odom = Odometry()
