@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -58,7 +59,7 @@
 
         /* Lift Buttons */
         .lift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .btn { padding: 1.1rem 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: white; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; touch-action: none; }
+        .btn { padding: 1.1rem 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: white; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; touch-action: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
         .btn:active { background: var(--accent-color); transform: scale(0.95); box-shadow: 0 0 20px var(--accent-color); }
         .btn-stop { background: var(--danger); border: none; grid-column: span 2; padding: 0.65rem; font-size: 0.7rem; }
 
@@ -103,13 +104,13 @@
         <div class="dpad-section">
             <div class="dpad">
                 <div></div> <!-- Top Left -->
-                <button class="dpad-btn" id="move-up">↑</button>
+                <button class="dpad-btn" id="move-up"><i data-lucide="chevron-up"></i></button>
                 <div></div> <!-- Top Right -->
-                <button class="dpad-btn" id="move-left">←</button>
+                <button class="dpad-btn" id="move-left"><i data-lucide="chevron-left"></i></button>
                 <div class="dpad-center"></div>
-                <button class="dpad-btn" id="move-right">→</button>
+                <button class="dpad-btn" id="move-right"><i data-lucide="chevron-right"></i></button>
                 <div></div> <!-- Bottom Left -->
-                <button class="dpad-btn" id="move-down">↓</button>
+                <button class="dpad-btn" id="move-down"><i data-lucide="chevron-down"></i></button>
                 <div></div> <!-- Bottom Right -->
             </div>
             <p class="label">Directional Control</p>
@@ -119,9 +120,9 @@
             <div class="control-group">
                 <p class="label">Lifting System</p>
                 <div class="lift-grid">
-                    <button class="btn" id="lift-up">↑ UP</button>
-                    <button class="btn" id="lift-down">↓ DOWN</button>
-                    <button class="btn btn-stop" id="lift-stop">EMERGENCY STOP</button>
+                    <button class="btn" id="lift-up"><i data-lucide="arrow-up-to-line" width="18" height="18"></i> UP</button>
+                    <button class="btn" id="lift-down"><i data-lucide="arrow-down-to-line" width="18" height="18"></i> DOWN</button>
+                    <button class="btn btn-stop" id="lift-stop"><i data-lucide="octagon-alert" width="16" height="16"></i> EMERGENCY STOP</button>
                 </div>
             </div>
 
@@ -268,6 +269,9 @@
         window.addEventListener('mouseup', universalStop);
         window.addEventListener('touchend', universalStop);
         window.addEventListener('contextmenu', e => e.preventDefault());
+
+        // --- INIT ICONS ---
+        lucide.createIcons();
     </script>
 </body>
 </html>

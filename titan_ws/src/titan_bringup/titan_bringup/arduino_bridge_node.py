@@ -19,7 +19,7 @@ class ArduinoBridge(Node):
         self.declare_parameter('ticks_per_meter', 3186.0) # Adjusted for 10cm wheels
         self.declare_parameter('wheel_base', 0.45)      # Measured 45cm width
         self.declare_parameter('publish_tf', True)
-        self.declare_parameter('use_gyro', True)
+        self.declare_parameter('use_gyro', False)
         
         self.port = self.get_parameter('port').value
         self.baudrate = self.get_parameter('baudrate').value
@@ -146,8 +146,8 @@ class ArduinoBridge(Node):
                 # Displacement and Heading Update
                 d_center = (dl + dr) / 2.0
                 if self.use_gyro:
-                    # Arduino sends at 50Hz (20ms packets)
-                    d_theta = (gz / 1000.0) * 0.02 
+                    # Arduino sends at 50Hz (20ms packets). Convert deg/s to rad/s.
+                    d_theta = (gz / 1000.0) * (math.pi / 180.0) * 0.02 
                 else:
                     d_theta = (dr - dl) / self.WHEEL_BASE
                 
