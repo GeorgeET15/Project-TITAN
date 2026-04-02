@@ -51,8 +51,8 @@ def main(args=None):
     node = rclpy.create_node('titan_teleop')
     
     # Declare dynamic speed parameters
-    node.declare_parameter('speed', 0.2)
-    node.declare_parameter('turn', 0.5)
+    node.declare_parameter('speed', 0.15)
+    node.declare_parameter('turn', 0.8)
     speed_param = node.get_parameter('speed').value
     turn_param = node.get_parameter('turn').value
 
