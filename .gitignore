@@ -1,0 +1,15 @@
+# Build Artifacts
+**/build/
+**/install/
+**/log/
+**/node_modules/
+**/dist/
+
+# OS Metadata
+**/.DS_Store
+**/*.log
+**/.env
+
+# IDE
+**/.vscode/
+**/.idea/
