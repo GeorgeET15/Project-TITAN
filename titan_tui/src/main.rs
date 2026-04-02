@@ -600,7 +600,7 @@ impl App {
                         let ros_args = format!("--ros-args -p speed:={} -p turn:={}", speed, turn);
 
                         self.logs.push(format!("Spawning Remote Teleop (s={}, t={}) in new window...", speed, turn));
-                        let cmd_str = format!("gnome-terminal -- bash -c 'source ~/Project-TITAN/titan_ws/install/setup.bash && ros2 run titan_bringup titan_teleop {}'", ros_args);
+                        let cmd_str = format!("x-terminal-emulator -e \"bash -c 'source ~/Project-TITAN/titan_ws/install/setup.bash && ros2 run titan_bringup titan_teleop {} || {{ echo \\\"\\nProcess exited or crashed. Press Enter to close window...\\\"; read; }}'\"", ros_args);
                         let _ = Command::new("bash")
                             .arg("-c")
                             .arg(cmd_str)
@@ -616,7 +616,7 @@ impl App {
                             self.available_rviz_configs[self.rviz_config_selection_index].clone()
                         };
                         self.logs.push(format!("Spawning Remote RViz with config: {}...", config_file));
-                        let cmd_str = format!("gnome-terminal -- bash -c 'LIBGL_ALWAYS_SOFTWARE=1 rviz2 -d ~/Project-TITAN/titan_ws/src/titan_bringup/rviz_config/{}; exec bash'", config_file);
+                        let cmd_str = format!("x-terminal-emulator -e \"bash -c 'LIBGL_ALWAYS_SOFTWARE=1 rviz2 -d ~/Project-TITAN/titan_ws/src/titan_bringup/rviz_config/{} || {{ echo \\\"\\nRViz crashed or exited. Press Enter to close window...\\\"; read; }}'\"", config_file);
                         let _ = Command::new("bash")
                             .arg("-c")
                             .arg(cmd_str)
@@ -670,7 +670,7 @@ impl App {
 
         if self.device_type == DeviceType::Laptop {
             self.logs.push(format!("Laptop Mode: {} launching in new window...", file));
-            let terminal_cmd = format!("gnome-terminal -- bash -c \"{}; exec bash\"", cmd_str);
+            let terminal_cmd = format!("x-terminal-emulator -e \"bash -c '{} || {{ echo \\\"\\nLaunch failed. Press Enter to close window...\\\"; read; }}'\"", cmd_str);
             let _ = Command::new("bash")
                 .arg("-c")
                 .arg(&terminal_cmd)
