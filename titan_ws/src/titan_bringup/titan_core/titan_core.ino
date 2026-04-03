@@ -103,16 +103,8 @@ void loop() {
 }
 
 void setMotors(int l, int r) {
-  static int last_l = -999;
-  static int last_r = -999;
-  
   l = constrain(l, -255, 255);
   r = constrain(r, -255, 255);
-
-  // Delta Guard: Only hit the AVR Hardware Timers if velocity actually changed.
-  // This prevents 'PWM Reset' clicking within the L298N inductor coils.
-  if (l == last_l && r == last_r) return;
-  last_l = l; last_r = r;
 
   if (l >= 0) { analogWrite(PIN_L_PWM_F, l); analogWrite(PIN_L_PWM_B, 0); }
   else { analogWrite(PIN_L_PWM_F, 0); analogWrite(PIN_L_PWM_B, abs(l)); }
