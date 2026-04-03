@@ -134,7 +134,7 @@ class ArduinoBridge(Node):
                     self.get_logger().warn(f"CRC Mismatch! Calculated {calc_crc:02X}, Received {crc:02X}. Payload: {payload.hex()}")
                     continue
                 
-                l_ticks = -l_ticks # Flip polarity for left encoder
+                # l_ticks = -l_ticks # Assuming Arduino normalizes wheel polarities natively
                 
                 if self.last_l_ticks is None:
                     self.last_l_ticks, self.last_r_ticks = l_ticks, r_ticks
@@ -147,8 +147,9 @@ class ArduinoBridge(Node):
                 # Displacement and Heading Update
                 d_center = (dl + dr) / 2.0
                 if self.use_gyro:
-                    # Arduino sends at 50Hz (20ms packets). Convert deg/s to rad/s.
-                    d_theta = (gz / 1000.0) * (math.pi / 180.0) * 0.02 
+                    # IMU is mounted upright (VCC forward). Vertical axis is X.
+                    # Convert deg/s to rad/s.
+                    d_theta = (gx / 1000.0) * (math.pi / 180.0) * 0.02 
                 else:
                     d_theta = (dr - dl) / self.WHEEL_BASE
                 
