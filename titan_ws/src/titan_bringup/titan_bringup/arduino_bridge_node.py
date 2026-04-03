@@ -19,8 +19,8 @@ class ArduinoBridge(Node):
         self.declare_parameter('ticks_per_meter', 3186.0) # Adjusted for 10cm wheels
         self.declare_parameter('wheel_base', 0.45)      # Measured 45cm width
         self.declare_parameter('publish_tf', True)
-        self.declare_parameter('use_gyro', False)
-        self.declare_parameter('publish_imu', False)
+        self.declare_parameter('use_gyro', True)
+        self.declare_parameter('publish_imu', True)
         
         self.port = self.get_parameter('port').value
         self.baudrate = self.get_parameter('baudrate').value
