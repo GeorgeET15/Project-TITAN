@@ -240,8 +240,11 @@
 
         // --- LIFT CONTROL ---
         let liftInt = null;
+        let currentLift = 0;
         const lift = (v) => {
             clearInterval(liftInt);
+            if (v === 0 && currentLift === 0) return; // Do not publish redundant stops
+            currentLift = v;
             const msg = new ROSLIB.Message({ data: v });
             liftCmd.publish(msg);
             if (v !== 0) liftInt = setInterval(() => liftCmd.publish(msg), 100);
