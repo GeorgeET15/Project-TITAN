@@ -52,6 +52,7 @@ enum MenuItem {
     Rebuild,
     ConnectWiFi,
     KillAll,
+    StartGui,
     // Laptop Remote (Instructions)
     RemoteTeleop,
     RemoteRViz,
@@ -70,6 +71,7 @@ impl MenuItem {
             MenuItem::Rebuild => "[Sys] REBUILD WORKSPACE".to_string(),
             MenuItem::ConnectWiFi => "[Sys] CONNECT WIFI (USB)".to_string(),
             MenuItem::KillAll => "[Sys] KILL ALL ROS2 PROC".to_string(),
+            MenuItem::StartGui => "[Sys] START WEB GUI (VITE)".to_string(),
             MenuItem::RemoteTeleop => "[Laptop] REMOTE TELEOP".to_string(),
             MenuItem::RemoteRViz => "[Laptop] REMOTE RVIZ".to_string(),
         }
@@ -181,6 +183,7 @@ impl App {
                 MenuItem::Rebuild,
                 MenuItem::ConnectWiFi,
                 MenuItem::KillAll,
+                MenuItem::StartGui,
                 MenuItem::RemoteTeleop,
                 MenuItem::RemoteRViz,
             ],
@@ -645,6 +648,16 @@ impl App {
                         self.logs.push("Global Reset Complete.".to_string());
                         self.operation_status = "IDLE".to_string();
                         self.active_process = None;
+                    },
+                    MenuItem::StartGui => {
+                        let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
+                        self.logs.push("Launching Web GUI (npm run dev)...".to_string());
+                        let cmd_str = format!("x-terminal-emulator -e \"bash -c 'cd {}/Project-TITAN/titan_gui && npm run dev -- --host || {{ echo \\\"\\nGUI process exited. Press Enter to close...\\\"; read; }}'\"", home);
+                        let _ = Command::new("bash")
+                            .arg("-c")
+                            .arg(cmd_str)
+                            .spawn()
+                            .map(|child| self.active_process = Some(child));
                     },
                     _ => {}
                 }
