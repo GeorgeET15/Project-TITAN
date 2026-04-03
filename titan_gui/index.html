@@ -162,9 +162,7 @@
         });
 
         retryBtn.onclick = () => {
-            ros.connect('ws://' + window.location.hostname + ':9090');
-            retryBtn.style.opacity = '0.5';
-            setTimeout(() => retryBtn.style.opacity = '1', 500);
+            window.location.reload();
         };
 
         // --- TOPICS ---
