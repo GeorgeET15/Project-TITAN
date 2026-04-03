@@ -134,7 +134,7 @@ class ArduinoBridge(Node):
                     self.get_logger().warn(f"CRC Mismatch! Calculated {calc_crc:02X}, Received {crc:02X}. Payload: {payload.hex()}")
                     continue
                 
-                # l_ticks = -l_ticks # Assuming Arduino normalizes wheel polarities natively
+                l_ticks = -l_ticks # Restore left-side motor inversion
                 
                 if self.last_l_ticks is None:
                     self.last_l_ticks, self.last_r_ticks = l_ticks, r_ticks

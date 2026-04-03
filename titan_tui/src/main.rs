@@ -570,7 +570,7 @@ impl App {
                     },
                     MenuItem::LocalTeleop => {
                         let is_tmux = std::env::var("TMUX").is_ok();
-                        let speed = if self.teleop_speed.is_empty() { "0.15" } else { &self.teleop_speed };
+                        let speed = if self.teleop_speed.is_empty() { "0.25" } else { &self.teleop_speed };
                         let turn = if self.teleop_turn.is_empty() { "0.8" } else { &self.teleop_turn };
                         let ros_args = format!("--ros-args -p speed:={} -p turn:={}", speed, turn);
                         
@@ -587,7 +587,7 @@ impl App {
                         }
                     },
                     MenuItem::RemoteTeleop => {
-                        let speed = if self.teleop_speed.is_empty() { "0.15" } else { &self.teleop_speed };
+                        let speed = if self.teleop_speed.is_empty() { "0.25" } else { &self.teleop_speed };
                         let turn = if self.teleop_turn.is_empty() { "0.8" } else { &self.teleop_turn };
                         let ros_args = format!("--ros-args -p speed:={} -p turn:={}", speed, turn);
 
