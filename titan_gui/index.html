@@ -186,9 +186,9 @@
         let currentAngular = 0;
 
         setInterval(() => {
-            // Deceleration (Sharper Stop)
-            const decelLinear = 0.15; 
-            const decelAngular = 0.50;
+            // Deceleration (0.2s stop time)
+            const decelLinear = 0.09; 
+            const decelAngular = 0.25;
 
             // Instant Start / Smooth Stop
             if (targetLinear !== 0) currentLinear = targetLinear;

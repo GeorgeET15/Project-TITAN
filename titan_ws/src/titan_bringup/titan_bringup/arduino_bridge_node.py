@@ -75,6 +75,12 @@ class ArduinoBridge(Node):
         v, w = msg.linear.x, msg.angular.z
         v_l = v - (w * self.WHEEL_BASE / 2.0)
         v_r = v + (w * self.WHEEL_BASE / 2.0)
+        
+        # Asymmetric Drift Compensation:
+        # The front-right quadrant is physically heavier. Boost the right motor 
+        # algorithmically by 25% so it has the explicit torque to over-match the friction
+        v_r = v_r * 1.25 
+        
         self.target_l = max(-255, min(255, int(v_l * 400))) 
         self.target_r = max(-255, min(255, int(v_r * 400)))
         self.send_robot_cmd()
