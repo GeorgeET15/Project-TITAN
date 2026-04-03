@@ -208,8 +208,8 @@
             }
 
             // Cleanup floating noise
-            if (Math.abs(currentLinear) < 0.001) currentLinear = 0;
-            if (Math.abs(currentAngular) < 0.001) currentAngular = 0;
+            if (Math.abs(currentLinear) < 0.05) currentLinear = 0;
+            if (Math.abs(currentAngular) < 0.1) currentAngular = 0;
 
             // Publish
             if (currentLinear !== 0 || currentAngular !== 0 || targetLinear !== 0 || targetAngular !== 0) {

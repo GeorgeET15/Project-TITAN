@@ -83,6 +83,11 @@ class ArduinoBridge(Node):
         
         self.target_l = max(-255, min(255, int(v_l * 400))) 
         self.target_r = max(-255, min(255, int(v_r * 400)))
+        
+        # Hardware Deadzone: Force all 'buzzing' PWM values (<15) to absolute 0
+        if abs(self.target_l) < 15: self.target_l = 0
+        if abs(self.target_r) < 15: self.target_r = 0
+        
         self.send_robot_cmd()
 
     def aux_callback(self, msg):
