@@ -665,9 +665,28 @@ impl App {
                         self.loading_message = "Rebuilding Workspace...".to_string();
                         self.logs.push("Rebuilding...".to_string());
                         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
-                        let build_cmd = format!("cd {}/Project-TITAN/titan_ws && colcon build --symlink-install", home);
-                        let output = Command::new("bash").arg("-c").arg(build_cmd).output();
-                        self.handle_output(output, "Rebuild complete.");
+                        let ws_path = format!("{}/Project-TITAN/titan_ws", home);
+                        let build_cmd = format!("cd {} && colcon build --symlink-install", ws_path);
+                        
+                        let res = Command::new("bash").arg("-c").arg(&build_cmd).output();
+                        
+                        match res {
+                            Ok(out) if !out.status.success() => {
+                                let stderr = String::from_utf8_lossy(&out.stderr);
+                                if stderr.contains("can't copy") || stderr.contains("Permission denied") || stderr.contains("easy_install.py") {
+                                    self.logs.push("Path mismatch detected! Performing Deep Clean...".to_string());
+                                    let clean_cmd = format!("rm -rf {}/build {}/install {}/log", ws_path, ws_path, ws_path);
+                                    let _ = Command::new("bash").arg("-c").arg(&clean_cmd).output();
+                                    
+                                    self.logs.push("Retrying clean build...".to_string());
+                                    let retry_out = Command::new("bash").arg("-c").arg(&build_cmd).output();
+                                    self.handle_output(retry_out, "Clean Rebuild complete.");
+                                } else {
+                                    self.handle_output(Ok(out), "Rebuild failed.");
+                                }
+                            }
+                            other => self.handle_output(other, "Rebuild complete."),
+                        }
                         self.is_loading = false;
                     },
                     MenuItem::KillAll => {
