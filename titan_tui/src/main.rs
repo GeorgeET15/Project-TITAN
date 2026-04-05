@@ -642,10 +642,10 @@ impl App {
                         self.is_loading = false;
                     },
                     MenuItem::KillAll => {
-                        self.logs.push(self.translate_log("pkill -9 -f ros2"));
-                        let kill_cmd = "pkill -9 -f ros2; pkill -9 -f ydlidar; pkill -9 -f slam_toolbox; pkill -9 -f arduino_bridge; ros2 daemon stop; ros2 daemon start";
+                        self.logs.push("Aggressive System Reset...".to_string());
+                        let kill_cmd = "pkill -9 -f 'ros|ydlidar|slam_toolbox|arduino_bridge|teleop'; ros2 daemon stop; sudo rm -f /var/lock/LCK..*; sleep 2; ros2 daemon start";
                         let _ = Command::new("bash").arg("-c").arg(kill_cmd).output();
-                        self.logs.push("Global Reset Complete.".to_string());
+                        self.logs.push("Global Reset Complete. Port locks cleared.".to_string());
                         self.operation_status = "IDLE".to_string();
                         self.active_process = None;
                     },

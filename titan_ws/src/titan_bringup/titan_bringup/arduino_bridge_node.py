@@ -108,6 +108,12 @@ class ArduinoBridge(Node):
             return
 
         try:
+            # Backlog Protection: Flush buffer if it's falling behind ( > 500 bytes)
+            if self.ser.in_waiting > 500:
+                self.get_logger().warn(f"Serial backlog detected ({self.ser.in_waiting} bytes). Flushing buffer to restore real-time sync.")
+                self.ser.reset_input_buffer()
+                return
+
             has_new_data = False
             while self.ser.in_waiting >= 23:
                 # Find header: [0xAA, 0x55]
@@ -152,10 +158,15 @@ class ArduinoBridge(Node):
                 
                 # Displacement and Heading Update
                 d_center = (dl + dr) / 2.0
+                
+                now_abs = self.get_clock().now()
+                dt = (now_abs - self.last_time).nanoseconds / 1e9
+                self.last_time = now_abs
+
                 if self.use_gyro:
                     # IMU is mounted upright (VCC forward). Vertical axis is X.
                     # Convert deg/s to rad/s.
-                    d_theta = (gx / 1000.0) * (math.pi / 180.0) * 0.02 
+                    d_theta = (gx / 1000.0) * (math.pi / 180.0) * dt
                 else:
                     d_theta = (dr - dl) / self.WHEEL_BASE
                 
