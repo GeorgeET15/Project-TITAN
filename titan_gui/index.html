@@ -207,12 +207,13 @@
                 else if (currentAngular > 0) currentAngular = Math.max(0, currentAngular - decelAngular);
             }
 
-            // Cleanup floating noise
-            if (Math.abs(currentLinear) < 0.001) currentLinear = 0;
-            if (Math.abs(currentAngular) < 0.001) currentAngular = 0;
+            // Cleanup floating noise (Snap to exactly 0)
+            if (Math.abs(currentLinear) < 0.01) currentLinear = 0;
+            if (Math.abs(currentAngular) < 0.01) currentAngular = 0;
 
-            // Publish
-            if (currentLinear !== 0 || currentAngular !== 0 || targetLinear !== 0 || targetAngular !== 0) {
+            // Publish only if moving AND NOT LIFTING (to prevent serial clash)
+            const isMoving = currentLinear !== 0 || currentAngular !== 0 || targetLinear !== 0 || targetAngular !== 0;
+            if (isMoving && currentLift === 0) {
                 cmdVel.publish(new ROSLIB.Message({
                     linear: { x: currentLinear, y: 0, z: 0 },
                     angular: { x: 0, y: 0, z: currentAngular }
