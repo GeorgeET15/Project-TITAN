@@ -475,16 +475,43 @@ impl App {
                 }
             }
         }
+
+        // Automatic dismissal of Nav2 Loading Screen
+        if self.is_loading && self.operation_status == "NAVIGATION" {
+             // Check roughly every 2 seconds to avoid CPU spiking
+             if self.spinner_frame % 20 == 0 {
+                let output = Command::new("ros2")
+                    .args(["node", "list"])
+                    .output();
+                
+                if let Ok(out) = output {
+                    let s = String::from_utf8_lossy(&out.stdout);
+                    if s.contains("planner_server") || s.contains("controller_server") {
+                        self.is_loading = false;
+                        self.logs.push("Navigation System: ONLINE & READY".to_string());
+                    }
+                }
+             }
+        }
     }
 
     fn translate_log(&self, msg: &str) -> String {
+        // Filter out Lidar CRC errors and common jargon
+        if msg.contains("Check Sum") || msg.contains("wait_for_service") || msg.contains("lifecycle_manager") {
+            return String::new(); 
+        }
+
         if msg.contains("bringup.launch.py") { "Initializing Hardware Drivers...".to_string() }
         else if msg.contains("mapping.launch.py") { "Starting SLAM Toolbox Session...".to_string() }
         else if msg.contains("navigation.launch.py") { "Activating Nav2 Stack...".to_string() }
+        else if msg.contains("planner_server") && msg.contains("activating") { "Pathfinder Module: READY".to_string() }
+        else if msg.contains("controller_server") && msg.contains("activating") { "Pilot Module: READY".to_string() }
+        else if msg.contains("bt_navigator") && msg.contains("activating") { "Mission Manager: READY".to_string() }
+        else if msg.contains("map_server") && msg.contains("activating") { "Map Server: ONLINE".to_string() }
         else if msg.contains("teleop_twist_keyboard") { "Opening Teleop Terminal...".to_string() }
         else if msg.contains("map_saver_cli") { "Compressing & Saving Map Data...".to_string() }
         else if msg.contains("colcon build") { "Compiling Workspace Packages...".to_string() }
-        else if msg.contains("pkill -9 -f ros2") { "CRITICAL: PURGING ALL ROS2 PROCESSES...".to_string() }
+        else if msg.contains("pkill -9 -f") { "CRITICAL: PURGING PROCESSES...".to_string() }
         else { msg.to_string() }
     }
 
@@ -565,6 +592,8 @@ impl App {
                             return;
                         }
                         self.operation_status = "NAVIGATION".to_string();
+                        self.is_loading = true;
+                        self.loading_message = "Initializing Nav2 Stack...".to_string();
                         let home = std::env::var("HOME").unwrap_or_else(|_| "/home/pidev".to_string());
                         let maps_path = format!("{}/Project-TITAN/titan_ws/src/titan_bringup/maps/", home);
                         let map_file = format!("{}{}", maps_path, self.available_maps[self.map_selection_index]);
@@ -688,12 +717,22 @@ impl App {
 
         let is_tmux = std::env::var("TMUX").is_ok();
         if is_tmux {
-            self.logs.push("Spawning in tmux split...".to_string());
-            let _ = Command::new("tmux")
-                .args(["split-window", "-h", &cmd_str])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .spawn();
+            // For Navigation (Nav2), we suppress the split jargon view in favor of the custom TUI loader
+            if file.contains("navigation.launch.py") {
+                 self.logs.push("Spawning Nav2 Stack (Background)...".to_string());
+                 let _ = Command::new("tmux")
+                    .args(["split-window", "-h", "-d", &cmd_str]) // -d spawns it but keeps focus on TUI
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn();
+            } else {
+                self.logs.push("Spawning in tmux split...".to_string());
+                let _ = Command::new("tmux")
+                    .args(["split-window", "-h", &cmd_str])
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn();
+            }
         } else {
             if self.active_process.is_some() {
                 if let Some(mut child) = self.active_process.take() {
@@ -1248,10 +1287,25 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 fn render_loader(f: &mut ratatui::Frame, message: &str, frame: usize) {
-    let area = centered_rect(60, 20, f.size());
+    let area = centered_rect(50, 15, f.size());
     let frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"];
-    let text = vec![Line::from(format!(" {} {}", frames[frame % 8], message)), Line::from(" Please wait... ")];
-    let paragraph = Paragraph::new(text).block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Yellow))).alignment(Alignment::Center);
+    let spinner = frames[frame % frames.len()];
+    
+    let text = vec![
+        Line::from(vec![
+            Span::styled(format!(" {} ", spinner), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::styled(message, Style::default().fg(Color::White)),
+        ]),
+        Line::from(Span::styled(" [ SYSTEM SPOOLING UP ] ", Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC))),
+    ];
+
+    let paragraph = Paragraph::new(text)
+        .block(Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Double)
+            .border_style(Style::default().fg(Color::Cyan)))
+        .alignment(Alignment::Center);
+
     f.render_widget(ratatui::widgets::Clear, area);
     f.render_widget(paragraph, area);
 }
