@@ -43,6 +43,7 @@ class ArduinoBridge(Node):
         self.target_l = 0
         self.target_r = 0
         self.target_aux = 0
+        self.consecutive_crc_failures = 0
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.imu_pub = self.create_publisher(Imu, 'imu/data_raw', 10)
@@ -116,35 +117,45 @@ class ArduinoBridge(Node):
 
             has_new_data = False
             while self.ser.in_waiting >= 23:
-                # Find header: [0xAA, 0x55]
-                header = self.ser.read(1)
-                if header != b'\xAA':
+                # Find header [0xAA, 0x55] by sliding one byte at a time
+                header_check = self.ser.read(1)
+                if header_check != b'\xAA':
                     continue
                 
-                header = self.ser.read(1)
-                if header != b'\x55':
+                next_byte = self.ser.read(1)
+                if next_byte != b'\x55':
+                    # If it wasn't 55, we effectively "consumed" the AA and will try again
                     continue
                 
+                # We found [AA, 55], read the 21-byte payload
                 payload = self.ser.read(21)
                 if len(payload) < 21:
-                    self.get_logger().warn("Short packet received, skipping buffer.")
                     break
                 
                 # Unpack: ticks (2x i=4), IMU (6x h=2), CRC (1x B=1)
                 try:
                     l_ticks, r_ticks, ax, ay, az, gx, gy, gz, crc = struct.unpack('>iihhhhhhB', payload)
-                except struct.error:
-                    self.get_logger().warn("Failed to unpack payload.")
+                except struct.error as e:
+                    self.get_logger().warn(f"Unpack error: {e}")
                     continue
                 
-                # Verify CRC (Byte-wise XOR)
+                # Check CRC (XOR of all bytes in payload except the last one)
                 calc_crc = 0
                 for b in payload[:-1]:
                     calc_crc ^= b
                 
                 if calc_crc != crc:
-                    self.get_logger().warn(f"CRC Mismatch! Calculated {calc_crc:02X}, Received {crc:02X}. Payload: {payload.hex()}")
+                    self.consecutive_crc_failures += 1
+                    self.get_logger().warn(f"CRC Mismatch ({self.consecutive_crc_failures}/5). Calc: {calc_crc:02X}, Recv: {crc:02X}")
+                    
+                    if self.consecutive_crc_failures >= 5:
+                        self.get_logger().error("Sync lost! Flushing serial buffer for re-alignment.")
+                        self.ser.reset_input_buffer()
+                        self.consecutive_crc_failures = 0
                     continue
+                
+                # Success! Reset failure counter
+                self.consecutive_crc_failures = 0
                 
                 l_ticks = -l_ticks # Restore left-side motor inversion
                 
