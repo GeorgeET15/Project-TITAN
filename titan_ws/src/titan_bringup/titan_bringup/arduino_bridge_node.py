@@ -45,12 +45,12 @@ class ArduinoBridge(Node):
         self.target_aux = 0
         self.consecutive_crc_failures = 0
         
-        # Smoothing (LPF) state
-        self.smooth_l = 0.0
-        self.smooth_r = 0.0
-        self.ALPHA_ACCEL = 0.2  # Gentle ramp up
-        self.ALPHA_DECEL = 0.7  # Fast ramp down (safety)
-        self.DEADBAND = 8       # Ignore PWM below this to prevent humming
+        # Velocity-Space Smoothing (LPF) state
+        self.smooth_v = 0.0
+        self.smooth_w = 0.0
+        self.ALPHA_ACCEL = 0.4  # Snapper ramp up
+        self.ALPHA_DECEL = 0.85 # Near-instant ramp down (safe stop)
+        self.DEADBAND = 5       # Tighter deadband for finer control
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.imu_pub = self.create_publisher(Imu, 'imu/data_raw', 10)
@@ -81,30 +81,40 @@ class ArduinoBridge(Node):
 
     def cmd_callback(self, msg):
         v, w = msg.linear.x, msg.angular.z
-        v_l = v - (w * self.WHEEL_BASE / 2.0)
-        v_r = v + (w * self.WHEEL_BASE / 2.0)
+        
+        # Hard Stop for Joystick Release
+        if v == 0.0 and w == 0.0:
+            self.smooth_v = 0.0
+            self.smooth_w = 0.0
+            self.target_l = 0
+            self.target_r = 0
+            self.send_robot_cmd()
+            return
+            
+        # Velocity-Space Signal Smoothing (Exponential Filter)
+        alpha_v = self.ALPHA_DECEL if abs(v) < abs(self.smooth_v) else self.ALPHA_ACCEL
+        alpha_w = self.ALPHA_DECEL if abs(w) < abs(self.smooth_w) else self.ALPHA_ACCEL
+        
+        self.smooth_v = (alpha_v * v) + (1.0 - alpha_v) * self.smooth_v
+        self.smooth_w = (alpha_w * w) + (1.0 - alpha_w) * self.smooth_w
+        
+        # Calculate Wheel Speeds from SMOOTHED velocities
+        v_l = self.smooth_v - (self.smooth_w * self.WHEEL_BASE / 2.0)
+        v_r = self.smooth_v + (self.smooth_w * self.WHEEL_BASE / 2.0)
         
         # Asymmetric Drift Compensation:
         # Boost the right motor to overcome higher weight/friction in the FR quadrant
         v_r = v_r * 1.25 
         
         # Map velocity to PWM (-255 to 255)
-        raw_l = max(-255, min(255, int(v_l * 400))) 
-        raw_r = max(-255, min(255, int(v_r * 400)))
+        tl = int(max(-255, min(255, v_l * 400))) 
+        tr = int(max(-255, min(255, v_r * 400)))
 
-        # Signal Smoothing (Exponential Filter)
-        # Select Alpha based on acceleration vs deceleration
-        alpha_l = self.ALPHA_DECEL if abs(raw_l) < abs(self.smooth_l) else self.ALPHA_ACCEL
-        alpha_r = self.ALPHA_DECEL if abs(raw_r) < abs(self.smooth_r) else self.ALPHA_ACCEL
+        # Final Deadband Check
+        tl = tl if abs(tl) >= self.DEADBAND else 0
+        tr = tr if abs(tr) >= self.DEADBAND else 0
         
-        self.smooth_l = (alpha_l * raw_l) + (1.0 - alpha_l) * self.smooth_l
-        self.smooth_r = (alpha_r * raw_r) + (1.0 - alpha_r) * self.smooth_r
-        
-        # Apply Deadband & Final Casting
-        tl = int(self.smooth_l) if abs(self.smooth_l) > self.DEADBAND else 0
-        tr = int(self.smooth_r) if abs(self.smooth_r) > self.DEADBAND else 0
-        
-        # Only update and send if significant change or zeroing
+        # Only update and send if significant change
         if tl != self.target_l or tr != self.target_r:
             self.target_l, self.target_r = tl, tr
             self.send_robot_cmd()
