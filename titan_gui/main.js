@@ -197,10 +197,18 @@ function handleMove(e) {
     sendTwist(lin, ang);
 }
 
+let lastSent = 0;
+const THROTTLE_MS = 50; // 20Hz max command rate
+
 function sendTwist(lin, ang) {
+    const now = Date.now();
+    // Allow if enough time passed, or if it's a stop command (lin=0, ang=0)
+    if (now - lastSent < THROTTLE_MS && (lin !== 0 || ang !== 0)) return;
+    
+    lastSent = now;
     const twist = new ROSLIB.Message({
-        linear: { x: lin, y: 0, z: 0 },
-        angular: { x: 0, y: 0, z: ang }
+        linear: { x: parseFloat(lin.toFixed(2)), y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: parseFloat(ang.toFixed(2)) }
     });
     cmdVelPub.publish(twist);
 }
